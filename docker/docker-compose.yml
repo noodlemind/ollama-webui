@@ -1,0 +1,58 @@
+version: '3.8'
+
+# Define default settings using YAML anchors
+x-service-defaults: &service-defaults
+  init: true
+  restart: unless-stopped
+  networks:
+    - ollama-network
+
+services:
+  ollama:
+    <<: *service-defaults
+    image: ollama/ollama:latest
+    container_name: ollama
+    volumes:
+      - ../ollama-data:/root/.ollama
+      - ../scripts/models-init.sh:/models-init.sh
+    ports:
+      - "${OLLAMA_PORT:-11434}:11434"
+    deploy:
+      resources:
+        limits:
+          memory: "32g"
+          cpus: "8"
+        reservations:
+          devices:
+            - driver: gpu
+              count: all
+              capabilities: [ gpu ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:11434/api/version" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    entrypoint: [ "/bin/bash", "/models-init.sh" ]
+
+  openwebui:
+    <<: *service-defaults
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: openwebui
+    volumes:
+      - ../webui-data:/app/backend/data
+    ports:
+      - "${WEBUI_PORT:-3000}:8080"
+    environment:
+      - OLLAMA_API_BASE_URL=${OLLAMA_API_BASE_URL:-http://ollama:11434/api}
+      - ENABLE_SIGNUP=${ENABLE_SIGNUP:-true}
+    depends_on:
+      ollama:
+        condition: service_healthy
+
+networks:
+  ollama-network:
+    driver: bridge
+
+volumes:
+  ollama-data:
+  webui-data:

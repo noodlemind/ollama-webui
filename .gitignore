@@ -1,0 +1,33 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# System Files
+.DS_Store
+Thumbs.db
+
+# Data Directories
+ollama-data/
+webui-data/
+
+# Docker
+docker-compose.override.yml
+
+# Logs
+*.log
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Dependencies
+node_modules/
+vendor/
+
+# Build
+dist/
+build/
